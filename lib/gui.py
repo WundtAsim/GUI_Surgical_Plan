@@ -112,24 +112,8 @@ class AppWindow:
         reg_button.horizontal_padding_em = 0.5
         reg_button.vertical_padding_em = 0.1
         reg_button.set_on_clicked(self._on_menu_register)
-        extract_plane_button = gui.Button("Extract")
-        extract_plane_button.horizontal_padding_em = 0.5
-        extract_plane_button.vertical_padding_em = 0.1
-        extract_plane_button.set_on_clicked(self._on_menu_extract)
-        save_coors_button = gui.Button("Save coors")
-        save_coors_button.horizontal_padding_em = 0.5
-        save_coors_button.vertical_padding_em = 0.1
-        save_coors_button.set_on_clicked(self._on_button_save)
-        tab1_2 = gui.Horiz()
-        tab1_2.add_stretch()
-        tab1_2.add_child(reg_button)
-        tab1_2.add_fixed(em)
-        tab1_2.add_child(extract_plane_button)
-        tab1_2.add_fixed(em)
-        tab1_2.add_child(save_coors_button)
-        tab1_2.add_stretch()
         tab1.add_child(tab1_1)
-        tab1.add_child(tab1_2)
+        tab1.add_child(reg_button)
         # tab Segmentation
         tab2 = gui.Vert()
         tab2_1 = gui.VGrid(2, 0.25*em)
@@ -220,9 +204,40 @@ class AppWindow:
         seg_button.set_on_clicked(self._on_menu_segment)
         tab2_1.add_child(seg_button)
         tab2.add_child(tab2_1)
+        # tab Extract
+        tab3 = gui.Vert()
+        tab3_1 = gui.VGrid(2, 0.5 * em, gui.Margins(em, em, em, em))
+        tab3_1.add_child(gui.Label('Distance from knee(mm):'))
+        dis_from_knee = gui.NumberEdit(gui.NumberEdit.DOUBLE)
+        dis_from_knee.double_value = 100
+        dis_from_knee.set_on_value_changed(self._on_edit_dis_from_knee)
+        tab3_1.add_child(dis_from_knee)
+        tab3_1.add_child(gui.Label('Length of instrucment(mm):'))
+        len_instrucment = gui.NumberEdit(gui.NumberEdit.DOUBLE)
+        len_instrucment.double_value = 400
+        len_instrucment.set_on_value_changed(self._on_edit_len_instrucment)
+        tab3_1.add_child(len_instrucment)
+
+        extract_plane_button = gui.Button("Extract")
+        extract_plane_button.horizontal_padding_em = 0.5
+        extract_plane_button.vertical_padding_em = 0.1
+        extract_plane_button.set_on_clicked(self._on_menu_extract)
+        save_coors_button = gui.Button("Save coors")
+        save_coors_button.horizontal_padding_em = 0.5
+        save_coors_button.vertical_padding_em = 0.1
+        save_coors_button.set_on_clicked(self._on_button_save)
+        tab3_2 = gui.Horiz()
+        tab3_2.add_stretch()
+        tab3_2.add_child(extract_plane_button)
+        tab3_2.add_fixed(em)
+        tab3_2.add_child(save_coors_button)
+        tab3_2.add_stretch()
+        tab3.add_child(tab3_1)
+        tab3.add_child(tab3_2)
 
         tabs.add_tab('Segment', tab2)
         tabs.add_tab('Register', tab1)
+        tabs.add_tab('Extract', tab3)
         self._show_processing = gui.CollapsableVert("Processing")
         self._show_processing.set_is_open(False)
         self._show_processing.add_child(tabs)
@@ -349,6 +364,7 @@ class AppWindow:
         self.window.close_dialog()
         pcd = self.geometry
         o3d.io.write_point_cloud(filename, pcd)
+        self.status_message.text = "Point cloud saved: " + filename
 
     def _on_menu_quit(self):
         gui.Application.instance.quit()
@@ -360,6 +376,7 @@ class AppWindow:
         # segment the leg out of pointcloud
         self.geometry = segment_pcd(self.geometry, self.settings)
         self.camera_view()
+        self.status_message.text = "Point cloud segmented."
 
     def _on_menu_register(self):
         if not all([self._file_edit.text_value, self._folder_edit.text_value]):
@@ -378,17 +395,21 @@ class AppWindow:
                 return
         self.geometry = register(pose,pcds)
         self.camera_view()
+        self.status_message.text = "Point clouds registered."
     def _on_menu_extract(self):
         if not all([self._file_edit.text_value, self.geometry]):
             self._message_box('Error', 'Missing pointcloud or filepath!')
             return
         pose = self._file_edit.text_value
-        leg_pcd, plane_pcd, result = extract_plane(self.geometry, pose)
+        leg_pcd, plane_pcd, result = extract_plane(self.geometry, pose,
+                                                   self.settings.dis_from_knee,
+                                                   self.settings.len_instrucment)
         self.coor_base = result
         self.geometry = leg_pcd+plane_pcd
         self.camera_view()
+        self.status_message.text = "Amputation plane extracted."
     def _on_button_save(self):
-        if not all([self._file_edit.text_value, self.coor_base]):
+        if self.coor_base is None:
             self._message_box('Error', 'Extract and Calculate coordinates first!')
             return
         dlg = gui.FileDialog(gui.FileDialog.SAVE, "Save Coordinates based robot base?",
@@ -401,6 +422,7 @@ class AppWindow:
     def _on_save_result(self, filename):
         self.window.close_dialog()
         np.savetxt(filename, self.coor_base, '%.2f')
+        self.status_message.text = "Coordinate file saved: " + filename
     def _on_file_button(self):
         # select pose file
         filedlg = gui.FileDialog(gui.FileDialog.OPEN, "Select file",
@@ -413,6 +435,7 @@ class AppWindow:
     def _load_pose_file(self, filename):
         self.window.close_dialog()
         self._file_edit.text_value = filename
+        self.status_message.text = "Pose file loaded: "+filename
 
     def _on_folder_button(self):
         # select pose file
@@ -461,36 +484,46 @@ class AppWindow:
     def _on_show_axes(self, show):
         self.settings.show_axes = show
         self._apply_settings()
+        self.status_message.text = 'Show axes' + (' On' if show else ' Off')
     def _on_check_pass_through(self, pass_through):
         self.settings.pass_through = pass_through
+        self.status_message.text = 'Pass through'+(' On' if pass_through else ' Off')
     def _on_edit_pass_vec(self, vector):
         self.settings.pass_x = vector[0]
         self.settings.pass_y = vector[1]
         self.settings.pass_z = vector[2]
     def _on_check_noise_reduct(self, noise_reduct):
         self.settings.noise_reduct = noise_reduct
+        self.status_message.text = 'Noise reduction' + (' On' if noise_reduct else ' Off')
     def _on_edit_noise_reduct_nb(self, nb):
         self.settings.noise_nb_neighbors = nb
     def _on_edit_noise_reduct_std(self, nb):
         self.settings.noise_std_radio = nb
     def _on_check_down_sample(self, down_sample):
         self.settings.down_sample = down_sample
+        self.status_message.text = 'Down sample' + (' On' if down_sample else ' Off')
     def _on_edit_down_sample_size(self, size):
         self.settings.down_sample_size = size
     def _on_edit_down_sample_pts(self, pts):
         self.settings.down_sample_points = pts
     def _on_check_remove_plane(self, remove_plane):
         self.settings.rm_plane = remove_plane
+        self.status_message.text = 'Remove plane' + (' On' if remove_plane else ' Off')
     def _on_edit_remove_plane_d(self, d):
         self.settings.rm_plane_d = d
     def _on_edit_remove_plane_minpts(self, pts):
         self.settings.rm_plane_min_points = pts
     def _on_check_dbscan_seg(self, seg):
         self.settings.dbscan_seg = seg
+        self.status_message.text = 'DBSCAN segmentation' + (' On' if seg else ' Off')
     def _on_edit_dbscan_seg_eps(self, eps):
         self.settings.dbscan_seg_eps = eps
     def _on_edit_dbscan_seg_minpts(self, pts):
         self.settings.dbscan_seg_min_points = pts
+    def _on_edit_dis_from_knee(self, dis):
+        self.settings.dis_from_knee = dis
+    def _on_edit_len_instrucment(self, len):
+        self.settings.len_instrucment = len
 
     def load(self, path):
         if os.path.isfile(path):
@@ -504,6 +537,7 @@ class AppWindow:
                 pass
             if cloud is not None:
                 print("[Info] Successfully read", path)
+                self.status_message.text = "[Info] Successfully read", path
                 if not cloud.has_normals():
                     cloud.estimate_normals()
                 cloud.normalize_normals()
@@ -512,6 +546,7 @@ class AppWindow:
                 self.geometry = cloud
             else:
                 print("[WARNING] Failed to read points", path)
+                self.status_message.text = "[WARNING] Failed to read points", path
             self.camera_view()
 
     def update(self, frame_elements):

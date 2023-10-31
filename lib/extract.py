@@ -23,7 +23,7 @@ class Extraction():
         # compute the distance between point and plane
         return A*(point[0]-x)+B*point[1]+C*point[2]+D
 
-    def get_slice(self, x, pose_path):
+    def get_slice(self, x, pose_path, len_instrucment):
         points = []
         points.append(np.array([x, 0, 100]))
         points.append(np.array([x, 100, 0]))
@@ -64,7 +64,7 @@ class Extraction():
         plane_base_pcd.transform(cam2base)
         plane_base_coor = np.asarray(plane_base_pcd.points)
         # for 100mm gripper height
-        plane_base_coor[:,2]+=100
+        plane_base_coor[:,2]+=len_instrucment
 
         return slice+rest_points, internal_pcd, plane_base_coor
 
@@ -107,7 +107,7 @@ class Extraction():
         self.skeleton.points = o3d.utility.Vector3dVector(xyz[centroids.astype(np.int32)])
 
 
-def extract_plane(pcd, pose):
+def extract_plane(pcd, pose, distance, len_instrucment):
     # use scan points
     extraction = Extraction(pcd)
     min_x = pcd.get_min_bound()[0]
@@ -120,7 +120,7 @@ def extract_plane(pcd, pose):
     x_all = np.asarray(extraction.skeleton.points)[:,0]
     knee_point_x = np.sort(x_all)[1]
     # take a slice 10cm above the knee
-    leg_pcd, plane_pcd, coordinate = extraction.get_slice(knee_point_x + 10*10, pose)
+    leg_pcd, plane_pcd, coordinate = extraction.get_slice(knee_point_x + distance, pose, len_instrucment)
     return leg_pcd, plane_pcd, coordinate
 
 

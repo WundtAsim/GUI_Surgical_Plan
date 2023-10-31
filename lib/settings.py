@@ -53,3 +53,6 @@ class Settings:
         self.dbscan_seg = True
         self.dbscan_seg_eps = 10  # Density parameter
         self.dbscan_seg_min_points = 10  # nb of min points
+
+        self.dis_from_knee = 100
+        self.len_instrucment = 400
