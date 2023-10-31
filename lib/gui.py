@@ -241,10 +241,8 @@ class AppWindow:
         self._show_processing = gui.CollapsableVert("Processing")
         self._show_processing.set_is_open(False)
         self._show_processing.add_child(tabs)
-        self._settings_panel.add_child(self._show_processing)
         self._show_axes = gui.Checkbox("Show axes")
         self._show_axes.set_on_checked(self._on_show_axes)
-        self._settings_panel.add_child(self._show_axes)
 
         self._save_pcd_button = gui.Button("Save PCD")
         self._save_pcd_button.horizontal_padding_em = 0.5
@@ -261,26 +259,28 @@ class AppWindow:
         save_buttons.add_stretch()
         save_buttons.add_child(self._save_pcd_button)
         save_buttons.add_stretch()
-        self._settings_panel.add_child(save_buttons)
+
         # show video
         self.video_size = (int(240 * self.window.scaling),
                            int(320 * self.window.scaling), 3)
         self.show_color = gui.CollapsableVert("Color image")
         self.show_color.set_is_open(False)
-        self._settings_panel.add_child(self.show_color)
         self.color_video = gui.ImageWidget(
             o3d.geometry.Image(np.zeros(self.video_size, dtype=np.uint8)))
         self.show_color.add_child(self.color_video)
         self.show_depth = gui.CollapsableVert("Depth image")
         self.show_depth.set_is_open(False)
-        self._settings_panel.add_child(self.show_depth)
         self.depth_video = gui.ImageWidget(
             o3d.geometry.Image(np.zeros(self.video_size, dtype=np.uint8)))
         self.show_depth.add_child(self.depth_video)
         self.status_message = gui.Label("")
-        self._settings_panel.add_child(self.status_message)
         # ----
-
+        self._settings_panel.add_child(self._show_processing)
+        self._settings_panel.add_child(self.show_color)
+        self._settings_panel.add_child(self.show_depth)
+        self._settings_panel.add_child(self._show_axes)
+        self._settings_panel.add_child(save_buttons)
+        self._settings_panel.add_child(self.status_message)
         # ---- Layout callback ----
         w.set_on_layout(self._on_layout)
         if 'on_window_close' in callbacks:
