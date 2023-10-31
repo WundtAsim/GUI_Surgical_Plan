@@ -77,7 +77,7 @@ class PipelineController:
         r, t = self.gripper2base_tcp()
         if r and t:
             self.pose.append(np.vstack((np.hstack((r, t)), np.array([0, 0, 0, 1]))))
-            np.savetxt('data/pose', self.pose)
+            np.save('data/pose', self.pose)
         else:
             print("[ROBOT missing]: without robot pose")
 
