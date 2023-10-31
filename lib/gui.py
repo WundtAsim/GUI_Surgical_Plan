@@ -537,7 +537,7 @@ class AppWindow:
                 pass
             if cloud is not None:
                 print("[Info] Successfully read", path)
-                self.status_message.text = "[Info] Successfully read", path
+                self.status_message.text = "[Info] Successfully read" + path
                 if not cloud.has_normals():
                     cloud.estimate_normals()
                 cloud.normalize_normals()
@@ -546,7 +546,7 @@ class AppWindow:
                 self.geometry = cloud
             else:
                 print("[WARNING] Failed to read points", path)
-                self.status_message.text = "[WARNING] Failed to read points", path
+                self.status_message.text = "[WARNING] Failed to read points" + path
             self.camera_view()
 
     def update(self, frame_elements):
