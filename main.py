@@ -2,10 +2,8 @@ import logging as log
 import threading
 import argparse
 import pyrealsense2 as rs
-import  UR_TCP_RTDE as UR
-import numpy as np
-import socket
 import open3d.visualization.gui as gui
+
 from lib.camera import PipelineModel
 from lib.gui import AppWindow
 
@@ -16,7 +14,7 @@ class PipelineController:
     operate on the main thread.
     """
 
-    def __init__(self, camera_config_file=None, device=None):
+    def __init__(self, camera_config_file='./lib/condig.json', device=None):
         """Initialize.
 
         Args:
@@ -74,37 +72,10 @@ class PipelineController:
     def on_save_pcd(self):
         """Callback to save current point cloud."""
         self.pipeline_model.flag_save_pcd = True
-        r, t = self.gripper2base_tcp()
-        if r and t:
-            self.pose.append(np.vstack((np.hstack((r, t)), np.array([0, 0, 0, 1]))))
-            np.save('data/pose', self.pose)
-        else:
-            print("[ROBOT missing]: without robot pose")
 
     def on_save_rgbd(self):
         """Callback to save current RGBD image pair."""
         self.pipeline_model.flag_save_rgbd = True
-
-    def gripper2base_tcp(self):
-        # for tcp connected
-        def is_connected(host, port):
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(0.5)
-            result = sock.connect_ex(('192.168.1.24', 30003)) == 1
-            sock.close()
-            return result
-        if is_connected('192.168.1.24', 30003):
-            TCP_socket = UR.connect('192.168.1.24', 30003)
-            data = TCP_socket.recv(1116)
-            position = UR.get_position(data)
-            print('position:=', position)
-            pos = position[:3]
-            rotation = position[3:]  # rotation vector
-            UR.disconnect(TCP_socket)
-            print("TCP disconnected...")
-            return rotation, pos
-        else:
-            return None, None
 
 
 if __name__ == "__main__":

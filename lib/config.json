@@ -1,0 +1,12 @@
+{
+    "serial": "",
+    "color_format": "RS2_FORMAT_RGB8",
+    "color_resolution": "0,720",
+    "depth_format": "RS2_FORMAT_Z16",
+    "depth_resolution": "0,720",
+    "fps": "30",
+    "controls-color-autoexposure-auto": "True",
+    "controls-color-white-balance-auto": "True",
+    "controls-depth-white-balance-auto": "True",
+    "controls-autoexposure-auto": "True"
+}

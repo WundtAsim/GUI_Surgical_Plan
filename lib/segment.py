@@ -42,39 +42,39 @@ def segment_pcd(pcd, settings:Settings):
         pcd = pass_through(pcd,
                            0,
                            settings.pass_z,"z")
-
+        print(pcd)
     # 去噪
     if settings.noise_reduct:
         # static: nb_neighbors:最近k个点    std_ratio:基于标准差的阈值，越小滤除点越多
         cl, ind = pcd.remove_statistical_outlier(
-            nb_neighbors=settings.noise_nb_neighbors,
+            nb_neighbors=int(settings.noise_nb_neighbors),
             std_ratio=settings.noise_std_radio)
         pcd = pcd.select_by_index(ind)
         # radius: nb_points:基于球体内包含点数量的阈值  radius:半径
         # cl, ind = filtered_cloud.remove_radius_outlier(nb_points=100, radius=0.04*unit)
         # filtered_cloud = filtered_cloud.select_by_index(ind)
-
+        print(pcd)
     # 降采样
     if settings.down_sample:
         # voxel: center of mass
         pcd = pcd.voxel_down_sample(voxel_size=settings.down_sample_size)
         # uniform down sample
         pcd = pcd.uniform_down_sample(every_k_points=1)
-
+        print(pcd)
     # RANSAC: random sample consensus
     if settings.rm_plane:
         cl, ind = pcd.segment_plane(
             settings.rm_plane_d,
-            settings.rm_plane_min_points,
+            int(settings.rm_plane_min_points),
             10000) # 距离阈值，模型点个数， 随机次数
         pcd = pcd.select_by_index(ind, invert=True)
-
+        print(pcd)
     # DBSCAN: Denisity-based spatial clustering
     if settings.dbscan_seg:
         with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
             labels = np.array(pcd.cluster_dbscan(
                 eps=settings.dbscan_seg_eps,
-                min_points=settings.dbscan_seg_min_points))
+                min_points=int(settings.dbscan_seg_min_points)))
         min_label = labels.min()
         max_label = labels.max()
         leg_label = []
@@ -82,7 +82,7 @@ def segment_pcd(pcd, settings:Settings):
             label_index = np.array(np.where(labels == i))[0]
             leg_label = label_index if len(label_index)>len(leg_label) else leg_label
         pcd = pcd.select_by_index(leg_label)
-
+        print(pcd)
     # random down sample
     if settings.down_sample:
         pcd = pcd.random_down_sample(settings.down_sample_points / len(pcd.points))

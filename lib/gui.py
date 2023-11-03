@@ -168,10 +168,10 @@ class AppWindow:
         remove_plane.set_on_checked(self._on_check_remove_plane)
         tab2_1_3 = gui.Horiz()
         remove_plane_d = gui.NumberEdit(gui.NumberEdit.DOUBLE)
-        remove_plane_d.int_value = 10
+        remove_plane_d.double_value = 10
         remove_plane_d.set_on_value_changed(self._on_edit_remove_plane_d)
         remove_plane_minpts = gui.NumberEdit(gui.NumberEdit.DOUBLE)
-        remove_plane_minpts.int_value = 3
+        remove_plane_minpts.double_value = 3
         remove_plane_minpts.set_on_value_changed(self._on_edit_remove_plane_minpts)
         tab2_1_3.add_child(gui.Label("d:   "))
         tab2_1_3.add_child(remove_plane_d)
@@ -324,7 +324,7 @@ class AppWindow:
         pannel_width = 24 * layout_context.theme.font_size
         pannel_height = min(
             r.height, self._settings_panel.calc_preferred_size(
-                layout_context, gui.Widget.Constraints()).height
+                layout_context, gui.Widget.Constraints()).height + 2*layout_context.theme.font_size
         )
         self._settings_panel.frame = gui.Rect(r.get_right() - pannel_width, r.y, pannel_width, pannel_height)
         # print(r.x, r.y)
@@ -390,8 +390,8 @@ class AppWindow:
             self._message_box('Error', 'pose file should be .npy!')
             return
         for i in pcds_list:
-            if not i.endswith('.pcd'):
-                self._message_box('Error', 'pcd files should be .pcd!')
+            if not i.endswith(('.pcd', '.ply')):
+                self._message_box('Error', 'pcd files should be .pcd or .ply!')
                 return
         self.geometry = register(pose,pcds)
         self.camera_view()

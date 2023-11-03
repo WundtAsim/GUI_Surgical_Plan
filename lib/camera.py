@@ -1,4 +1,3 @@
-import os
 import json
 import time
 import logging as log
@@ -7,6 +6,8 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import open3d as o3d
+import  UR_TCP_RTDE as UR
+import socket
 
 # Camera and processing
 class PipelineModel:
@@ -27,6 +28,8 @@ class PipelineModel:
                 provided, connected cameras are ignored.
             device (str): Compute device (e.g.: 'cpu:0' or 'cuda:0').
         """
+        # new: robot pose
+        self.pose = []
         self.update_view = update_view
         if device:
             self.device = device.lower()
@@ -50,7 +53,7 @@ class PipelineModel:
                 self.camera.init_sensor(o3d.t.io.RealSenseSensorConfig(
                     json.load(ccf)), filename=filename)
         else:
-            self.camera.init_sensor(filename=filename)
+            self.camera.init_sensor(filename='')
         self.camera.start_capture(start_record=False)
         self.rgbd_metadata = self.camera.get_metadata()
         self.status_message = f"Camera {self.rgbd_metadata.serial_number} opened."
@@ -73,7 +76,7 @@ class PipelineModel:
 
         self.pcd_frame = None
         self.rgbd_frame = None
-        self.executor = ThreadPoolExecutor(max_workers=3,
+        self.executor = ThreadPoolExecutor(max_workers=5,
                                            thread_name_prefix='Capture-Save')
         self.flag_exit = False
 
@@ -175,6 +178,16 @@ class PipelineModel:
                              print_progress=False)
         self.status_message = f"Saving point cloud to {filename}."
 
+        # robot pose:
+        r, t = self.executor.submit(self.gripper2base_tcp).result()
+        if r is not None and t is not None:
+            r = o3d.geometry.get_rotation_matrix_from_axis_angle(r)
+            t = t.reshape(3, 1)
+            self.pose.append(np.vstack((np.hstack((r, t)), np.array([0, 0, 0, 1]))))
+            np.save('data/pose', self.pose)
+        else:
+            print("[ROBOT missing]: without robot pose")
+
     def save_rgbd(self):
         """Save current RGBD image pair."""
         now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -187,3 +200,23 @@ class PipelineModel:
         self.status_message = (
             f"Saving RGBD images to {filename[:-3]}.{{jpg,png}}.")
 
+    def gripper2base_tcp(self):
+        # for tcp connected
+        def is_connected(host, port):
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2)
+            result = sock.connect_ex(('192.168.1.24', 30003)) == 0
+            sock.close()
+            return result
+        if is_connected('192.168.1.24', 30003):
+            TCP_socket = UR.connect('192.168.1.24', 30003)
+            data = TCP_socket.recv(1116)
+            position = UR.get_position(data)
+            print('position:=', position)
+            pos = position[:3]
+            rotation = position[3:]  # rotation vector
+            UR.disconnect(TCP_socket)
+            print("TCP disconnected...")
+            return rotation, pos
+        else:
+            return None, None
