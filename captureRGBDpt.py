@@ -20,6 +20,9 @@ def saveCurrentRGBD(vis):
     # cv2.imwrite('./data/color/color_' + str(view_ind) + '.png', color_image1)
     if not os.path.exists(pcds_path):
         os.makedirs(pcds_path)
+    # transform unit: 1000 for mm, 1 for m
+    unit = 1000
+    pcd.transform([[unit, 0, 0, 0], [0, unit, 0, 0], [0, 0, unit, 0], [0, 0, 0, 1]])
     o3d.io.write_point_cloud(pcds_path+'/pointcloud_' + str(view_ind) + '.ply', pcd)
     print('No.'+str(view_ind)+' shot is saved.' )
     # get robot pose

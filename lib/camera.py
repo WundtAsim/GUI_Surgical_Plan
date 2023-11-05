@@ -170,6 +170,9 @@ class PipelineModel:
         # Convert colors to uint8 for compatibility
         self.pcd_frame.point.colors = (self.pcd_frame.point.colors * 255).to(
             o3d.core.Dtype.UInt8)
+        # for transformatiom: 1000mm
+        unit = 1000
+        self.pcd_frame.transform([[unit, 0, 0, 0], [0, unit, 0, 0], [0, 0, unit, 0], [0, 0, 0, 1]])
         self.executor.submit(o3d.t.io.write_point_cloud,
                              filename,
                              self.pcd_frame,

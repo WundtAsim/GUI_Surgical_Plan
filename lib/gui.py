@@ -541,8 +541,6 @@ class AppWindow:
                 if not cloud.has_normals():
                     cloud.estimate_normals()
                 cloud.normalize_normals()
-                unit = 1000  # 1000 for mm, 1 for m
-                cloud.transform([[unit, 0, 0, 0], [0, unit, 0, 0], [0, 0, unit, 0], [0, 0, 0, 1]])
                 self.geometry = cloud
             else:
                 print("[WARNING] Failed to read points", path)

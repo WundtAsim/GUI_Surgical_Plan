@@ -38,17 +38,24 @@ class Extraction():
         slice.paint_uniform_color([1, 0, 0])
         rest_points = self.pcd.select_by_index(index, invert=True)
 
-        min_z = slice.get_min_bound()[2]
-        max_z = slice.get_max_bound()[2]
         gap = 5
         internal_points = []
-        slice_np = np.asarray(slice.points)
-        for z in np.arange(min_z, max_z.max(), gap):
-            slice_y = slice_np[np.where(np.abs(slice_np[:, 2] - z) < 5)]
-            min_y = slice_y[:,1].min()
-            max_y = slice_y[:,1].max()
-            for y in np.arange(min_y, max_y, gap):
+        # use rectangle ranther than outline
+        min_xyz = slice.get_min_bound()
+        max_xyz = slice.get_max_bound()
+        print(x, min, max)
+        for z in np.arange(min_xyz[2], max_xyz[2], gap):
+            for y in np.arange(min_xyz[1], max_xyz[1], gap):
                 internal_points.append([x, y, z])
+        # min_z = slice.get_min_bound()[2]
+        # max_z = slice.get_max_bound()[2]
+        # slice_np = np.asarray(slice.points)
+        # for z in np.arange(min_z, max_z.max(), gap):
+        #     slice_y = slice_np[np.where(np.abs(slice_np[:, 2] - z) < 5)]
+        #     min_y = slice_y[:,1].min()
+        #     max_y = slice_y[:,1].max()
+        #     for y in np.arange(min_y, max_y, gap):
+        #         internal_points.append([x, y, z])
         internal_pcd = o3d.geometry.PointCloud()
         internal_pcd.points = o3d.utility.Vector3dVector(internal_points)
         internal_pcd.paint_uniform_color([1,0,0])
